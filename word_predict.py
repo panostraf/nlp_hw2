@@ -9,6 +9,7 @@ class PredWord:
     def __init__(self):
         self.model = dict(pickle.load(open('models/trigram_model.p', 'rb')))
         self.model_bigram = dict(pickle.load(open('models/bigram_model.p','rb')))
+        self.model_unigram = dict(pickle.load(open('models/unigram_model.p','rb')))
 
     def predict_word(self, text):
 
@@ -19,7 +20,14 @@ class PredWord:
                 pred_w  = list(self.model_bigram[w0])[:5]
                 print(pred_w)
             except KeyError:
-                print('no prediction')
+                try:
+                    w0 = words[-1]
+                    pred_w = list(self.model_unigram[str(w0)])[:5]
+                    ### TODO UNIGRAM
+                    print(pred_w)
+                except:
+                    print('no prediction')
+                    pass
         else:
             try:
                 w0 = words[-2]
@@ -41,10 +49,15 @@ class PredWord:
                         pred_w  = list(self.model_bigram[w0])[:5]
                         print(pred_w)
                     except KeyError:
-                        print('no prediction')
-                except:
-                    print('no prediction')
-                    pass
+                        try:
+                        ### TODO UNIGRAM
+                            w0 = words[-1]
+                            pred_w = list(self.model_unigram[str(w0)])[:5]
+                            print(pred_w)
+                        except:
+                            ### TODO UNIGRAM
+                            print('no prediction')
+                            pass
 
 
 if __name__ == '__main__':
