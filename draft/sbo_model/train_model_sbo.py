@@ -123,7 +123,7 @@ class LanguageModel:
 
                 if value1 > 0:
                     
-                    score += math.log(key1)
+                    score += math.log(value1)
                     # print(len)
                     score -= math.log(len(self.sentences))
                 else:
@@ -142,8 +142,13 @@ class LanguageModel:
                 #     score2 -= math.log(self.totals_bigrams + len(self.model_bigrams))
                 #     value[key1] = score2
 
-        # {the: {a : 3 , job: 4,}
+                # mydict[valu1][key1]
 
+        # {the: {a : 3 , job: 4,}
+        # {
+        #('the','a')   : 3,
+        #('the','job') :4
+        # }
         
 
 

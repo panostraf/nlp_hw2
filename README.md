@@ -14,3 +14,5 @@
   pip install --upgrade pip (or pip3 install --upgrade pip)
   pip install -r requirements.txt
 
+# NOTES:
+Foler draft cotains the models (default and sbo) put them in the main dir if you want to run them

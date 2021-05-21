@@ -1,11 +1,3 @@
-### HW_2 ### 
-### NLP  ###
-### Trafalis Panagiotis ###
-### Ioannis Fitsopoulos ###
-### Eirini Nomikou ###
-
-
-
 from nltk import bigrams,trigrams
 from nltk.tokenize import word_tokenize, sent_tokenize
 from collections import defaultdict
@@ -51,9 +43,9 @@ class LanguageModel:
         # self.model_unigrams = dict()
 
         # Save models
-        pickle.dump(self.model, open('models/trigram_model_laplace.p', 'wb'))
-        pickle.dump(self.model_bigrams, open('models/bigram_model_laplace.p', 'wb'))
-        pickle.dump(self.model_unigrams, open('models/unigram_model_laplace.p', 'wb'))
+        pickle.dump(self.model, open('models/trigram_model.p', 'wb'))
+        pickle.dump(self.model_bigrams, open('models/bigram_model.p', 'wb'))
+        pickle.dump(self.model_unigrams, open('models/unigram_model.p', 'wb'))
 
 
 
@@ -94,7 +86,7 @@ class LanguageModel:
         for key, value in self.model.items():
             for key1, value1 in value.items():
                 if value1 > 0:
-                    score += math.log(value1+1)
+                    score += math.log(value1)
                     score -= math.log(self.totals + len(self.model))
                     value[key1] = score
                 else:
@@ -113,7 +105,7 @@ class LanguageModel:
             for key1, value1 in value.items():
                 # value[key1] = (value1 / self.totals_bigrams)
                 if value1 > 0:
-                    score2 += math.log(value1+1)
+                    score2 += math.log(value1)
                     score2 -= math.log(self.totals_bigrams + len(self.model_bigrams))
                     value[key1] = score2
                 else:
@@ -131,7 +123,7 @@ class LanguageModel:
         for key, value in self.model_unigrams.items():
             # self.model_unigrams[str(key)] = (value / self.total_unigram)
             if value > 0:
-                    score3 += math.log(value+1)
+                    score3 += math.log(value)
                     score3 -= math.log(self.total_unigram + len(self.model_unigrams))
                     self.model_unigrams[key] = score3
                     # print(self.model_unigrams[key])

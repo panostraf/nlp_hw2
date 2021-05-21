@@ -1,3 +1,10 @@
+### HW_2 ### 
+### NLP  ###
+### Trafalis Panagiotis ###
+### Ioannis Fitsopoulos ###
+### Eirini Nomikou ###
+
+
 from nltk import bigrams,trigrams
 from nltk.tokenize import word_tokenize, sent_tokenize
 from collections import defaultdict
