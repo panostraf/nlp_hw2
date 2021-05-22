@@ -14,5 +14,20 @@
   pip install --upgrade pip (or pip3 install --upgrade pip)
   pip install -r requirements.txt
 
-# NOTES:
-Foler draft cotains the models (default and sbo) put them in the main dir if you want to run them
+-----------------------------------------------------------------
+
+Files:
+
+  setup.py -- Creates necessary directories and downloads NLTK's packages
+  score.py -- evaluates different models and prints the according score in the terminal
+  
+  train_model.py -- builts trigram - bigram - unigram models and saves them in model directory
+  		   In pickle format
+  
+  word_predict.py -- starts a loop in the terminal where asks to type a sentence, and will
+		    will attempted to predict the next word
+
+  check_misspelled.py -- Tries to correct all the words in the provided sentence based on 
+                         Minimum edit distance and the language model
+  
+
