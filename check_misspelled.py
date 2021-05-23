@@ -1,159 +1,144 @@
-import re
-import string
-from collections import Counter
-import numpy as np
-from nltk.corpus import words
+import math
 import pickle
-import word_predict_laplace
 import collections
-from collections import defaultdict
-from nltk.tokenize import word_tokenize
+from nltk import sent_tokenize, word_tokenize
 
 
-class SpellChecker(object):
+class LaPlaceModel:
 
-  def __init__(self, corpus_file_path):
-    # with open(corpus_file_path, "r") as file:
-    #   lines = file.readlines()
-    #   words = []
-    #   for line in lines:
-    #     words += re.findall(r'\w+', line.lower())
+  def __init__(self,model):
+      self.model = model
+      self.score = 0
+      self.totals = 0
+      self.len = len(self.model)
 
-    self.vocabs = set(words.words())
-    self.word_probas = dict(pickle.load(open('models/unigram_model_laplace.p','rb')))
-    # self.vocabs = set(words) # words.words()
-    # self.word_counts = Counter(words) #!
-    # total_words = float(sum(self.word_counts.values()))#!
-    # self.word_probas = {word: self.word_counts[word] / total_words for word in self.vocabs}#!
-    # word_probas (lang model)
+  def score_trigram(self):
+      self.totals = self.sum_all()
+      for key, value in self.model.items():
+          for key1, value1 in value.items():
+              if value1 > 0:
+                  self.score += -math.log(value1+1)
+                  self.score -= -math.log(self.totals + self.len)      
+              else:
+                  self.score -= -math.log(self.totals + self.len)
 
+  def score_bigram(self):
+      self.totals = self.sum_all()
+      for key, value in self.model.items():
+          for key1, value1 in value.items():
+              if value1 > 0:
+                  self.score += -math.log(value1+1)
+                  self.score -= -math.log(self.totals + self.len)      
+              else:
+                  self.score -= -math.log(self.totals + self.len)
 
-  def _level_one_edits(self, word):
-    letters = string.ascii_lowercase
-    splits = [(word[:i], word[i:]) for i in range(len(word) + 1)]
-    deletes = [l + r[1:] for l,r in splits if r]
-    swaps = [l + r[1] + r[0] + r[2:] for l, r in splits if len(r)>1]
-    replaces = [l + c + r[1:] for l, r in splits if r for c in letters]
-    inserts = [l + c + r for l, r in splits for c in letters] 
+  def score_unigram(self):
+      for key, value in self.model.items():
+          if value > 0:
+                  self.score += -math.log(value+1)
+                  self.score -= -math.log(self.totals + len(self.model))
+          else:
+              self.score -= -math.log((self.totals) + len(self.model))
 
-    return set(deletes + swaps + replaces + inserts)
+  def sum_all(self):
+      total = 0
+      for key, value in self.model.items():
+          total += sum(value.values())
+      return total
 
-  def _level_two_edits(self, word):
-    return set(e2 for e1 in self._level_one_edits(word) for e2 in self._level_one_edits(e1))
+class StupidBackOff:
+  def __init__(self,trigram,bigram,unigram):
+      self.trigram = trigram
+      self.bigram = bigram
+      self.unigram = unigram
 
-  def check(self, word):
-    candidates = self._level_one_edits(word) or self._level_two_edits(word) or [word]
-    valid_candidates = [w for w in candidates if w in self.vocabs]
-    return sorted([(c, self.word_probas[c]) for c in valid_candidates], key=lambda tup: tup[1], reverse=True)
-
-
-
-def split(word):
-  return [(word[:i], word[i:]) for i in range(len(word) + 1)]
-
-
-def delete(word):
-  return [l + r[1:] for l,r in split(word) if r]
-
-
-def swap(word):
-  return [l + r[1] + r[0] + r[2:] for l, r in split(word) if len(r)>1]
-
-
-def replace(word):
-  letters = string.ascii_lowercase
-  return [l + c + r[1:] for l, r in split(word) if r for c in letters]
+      self.trigram_totals = self.sum_all(trigram)
+      self.bigram_totals = self.sum_all(bigram)
+      self.unigram_totals = sum(unigram.values())
 
 
-def insert(word):
-  letters = string.ascii_lowercase
-  return [l + c + r for l, r in split(word) for c in letters]
+      self.score = self.trigram_score()
+      self.score2 = self.bigram_score()
+
+  def sum_all(self,model):
+      total = 0
+      for key, value in model.items():
+          total += sum(value.values())
+      return total
 
 
-def edit1(word):
-  return set(delete(word) + swap(word) + replace(word) + insert(word))
+  def trigram_score(self):
+      score = 0
+      for key,value in self.trigram.items():
+          for key1,value1 in value.items():
+              # print(key1)
+              count = self.trigram[key][key1]
+              # print(count)
+              if count > 0:
+                  try:
+                      score += -math.log(count)
+                      score -= -math.log(self.bigram[key[1]][key1]+1)
+                  except:
+                      score += -math.log(count)
+                      score -= -math.log(1)
+
+              else:
+                  try:
+                      score += -math.log(0.4) + math.log(self.bigram[key[1]] + 1)
+                      score -= -math.log(self.bigram + len(self.bigram.keys()))
+                  except KeyError:
+                      score += -math.log(0.4) + math.log(1)
+                      score -= -math.log(self.bigram + len(self.bigram.keys()))
+      return round(score)
+
+  def bigram_score(self):
+      score = 0
+      for key,value in self.bigram.items():
+          for key1,value1 in value.items():
+              # print(key1)
+              count = self.bigram[key][key1]
+              # print(count)
+              if count > 0:
+                  try:
+                      score += -math.log(count)
+                      score -= -math.log(self.unigram[key1]+1)
+                  except KeyError:
+                      score += -math.log(count)
+                      score -= -math.log(1)
+
+              else:
+                  try:
+                      score += -math.log(0.4)*(0.4) + math.log(self.unigram[key1] + 1)
+                      score -= -math.log(self.unigram + len(self.unigram.keys()))
+                  except:
+                      score += -math.log(0.4)*(0.4) + math.log(1)
+                      score -= -math.log(self.unigram + len(self.unigram.keys()))
+      return round(score)
 
 
-def edit2(word):
-  return set(e2 for e1 in edit1(word) for e2 in edit1(e1))
+def main_LP():
+  # Read Saved Models
+  unigram = dict(pickle.load(open('models/unigram_model.p', 'rb')))
+  bigram = dict(pickle.load(open('models/bigram_model.p', 'rb')))
+  trigram = dict(pickle.load(open('models/trigram_model.p', 'rb')))
+  # Creade object for each model
+  unigram_laplace = LaPlaceModel(model = unigram)
+  bigram_laplace = LaPlaceModel(model = bigram)
+  trigram_laplace= LaPlaceModel(model = trigram)
+
+  # Calculate score for each model
+  bigram_laplace.score_bigram()
+  trigram_laplace.score_trigram()
+  sbo = StupidBackOff(trigram,bigram,unigram)
+
+  # Print Results
+  print('bigram_laplace',round(bigram_laplace.score/1000))    
+  print('bigram_SBO',round(sbo.score2/1000))
 
 
-def correct_spelling(word, vocabulary, word_probabilities):
-  if word in vocabulary:
-    print(f"{word} is already correctly spelt")
-    return 
-
-def level_one(word):
-  return set((delete(word)) + (swap(word))+ (insert(word)) + (replace(word)))
-  
-def level_two(word):
-  return set(e2 for e1 in level_one(word) for e2 in level_one(e1))
-  # return [word for word in candidates if word in vocabulary]
-
-
-def spell_check(word,sentence):
-  if word in vocabulary:
-    # print('found it')
-    return word
-
-  else:
-    sentence = sentence.rsplit(' ', 1)[0]
-    
-
-    sug1 = level_two(word).intersection(vocabulary)
-    sug2 = level_one(word).intersection(vocabulary)
-    suggestions = sug1.union(sug2)
-    # print(suggestions)
-
-
-    
-    predict = word_predict_laplace.PredWord()
-
-    words = [w for w in suggestions if w in vocabulary]
-    # print("words in vocab:",words)
-
-    # print('language model : ',predict.predict_word(sentence))
-
-    model_unigram = dict(pickle.load(open('models/unigram_model_laplace.p','rb')))
-    
-    suggestions_dict = defaultdict(lambda:0)
-    for w in words:
-
-        try:
-
-            suggestions_dict[w] = model_unigram[w]
-        except KeyError:
-            pass
-    sorted_dict = collections.OrderedDict(suggestions_dict)
-    
-
-    try:
-        if predict.predict_word(sentence) in suggestions_dict[w].keys():
-            # print(predict.predict_word(sentence))
-            return predict.predict_word(sentence)
-    except:
-        # print(list(sorted_dict)[0])
-        try:
-          return list(sorted_dict)[0]
-        except IndexError:
-          return word
-    
-
+  print('trigram_laplace',round(trigram_laplace.score/1000))
+  print('trigram_SBO',round(sbo.score/1000))
 
 
 if __name__ == '__main__':
-  sentence = 'Homerk 1 and assocated iles has been posted inb tthe Crse Resourceees Folder/Homework Assig'
-  while True:
-    sentence = input()
-    print(sentence)
-    word = sentence.split()[-1]
-    # print('word',word)
-    vocabulary = words.words()
-
-    corect_sentence = ''
-    word_list = word_tokenize(sentence)
-    for w in word_list:
-      corect_sentence = f'{corect_sentence} {str(spell_check(w,sentence))}'
-    print(corect_sentence)
-    print('\n\n')
-
+  main_LP()

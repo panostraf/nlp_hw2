@@ -88,59 +88,17 @@ class LanguageModel:
                 self.total_unigram +=1
 
     def convert_to_pct(self):
-        score = 0.0
-        # Divide with total counts
-        for key, value in self.model.items():
-            for key1, value1 in value.items():
-                if value1 > 0:
-                    score += math.log(value1)
-                    score -= math.log(self.totals + len(self.model))
-                    value[key1] = score
-                else:
-                    score -= math.log(self.totals + len(self.model))
-                    value[key1] = score
+
 
         # Sort Dict
         for key, value in self.model.items():
             self.model[key] = dict(sorted(value.items(), key=lambda x: x[1], reverse=True))
 
-
-
-        # Divide with total counts
-        score2 = 0
-        for key, value in self.model_bigrams.items():
-            for key1, value1 in value.items():
-                # value[key1] = (value1 / self.totals_bigrams)
-                if value1 > 0:
-                    score2 += math.log(value1)
-                    score2 -= math.log(self.totals_bigrams + len(self.model_bigrams))
-                    value[key1] = score2
-                else:
-                    score2 -= math.log(self.totals_bigrams + len(self.model_bigrams))
-                    value[key1] = score2
-
         for key, value in self.model_bigrams.items():
             self.model_bigrams[key] = dict(sorted(value.items(), key=lambda x: x[1], reverse=True))
 
-        
-
-        # Divide with total counts
         self.model_unigrams = dict(self.model_unigrams)
-        score3 = 0
-        for key, value in self.model_unigrams.items():
-            # self.model_unigrams[str(key)] = (value / self.total_unigram)
-            if value > 0:
-                    score3 += math.log(value)
-                    score3 -= math.log(self.total_unigram + len(self.model_unigrams))
-                    self.model_unigrams[key] = score3
-                    # print(self.model_unigrams[key])
-            else:
-                score3 -= math.log(self.total_unigram + len(self.model_unigrams))
-                self.model_unigrams[key] = score3
 
-
-        # Sort Dictionary
-        
         self.model_unigrams = dict(sorted(self.model_unigrams.items(), key=lambda x: x[1], reverse=True))
         
 
